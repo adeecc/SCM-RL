@@ -9,6 +9,18 @@
 
 \usepackage{xcolor}
 
+\usepackage[verbose=true,letterpaper]{geometry}
+\AtBeginDocument{
+  \newgeometry{
+    textheight=9in,
+    textwidth=6.5in,
+    top=1in,
+    headheight=14pt,
+    headsep=25pt,
+    footskip=30pt
+  }
+}
+
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
@@ -35,6 +47,8 @@
 
 \lstset{style=mystyle}
 
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
 
 \title{Guide to Deep Reinforcment Learning for Supply Chain Optimzation}
 
@@ -53,9 +67,12 @@
 
 Supply Chain Management is the optimization of resource allocation to an industry, to facilitate efficient production, and maximal profits. We look at the use of Deep Reinforcement Learning Strategies to improve upon existing baseline policies for Supply Chain Management Optimzation. Further, we leverage the use of Deep Neural Networks, to improve the performance of the model.
 
-The code used in this report can be found on: \href{https://github.com/adichopra11/SCM-RL}{adichopra11/SCM-RL}
+The code used in this report can be found on: \href{https://github.com/adeecc/SCM-RL}{adeecc/SCM-RL}
 
 % TODO: Add Multicolumns
+
+
+
 
 \section{Components of the Reinforcement Learning Strategy}
 
@@ -69,6 +86,8 @@ Further, the facrtory warehouse has a maximum capacity of $c_0$ units. The stora
 At any time, $t$, the number of units shipped from the factory warehouse to the distribution warehouse $j$ is $a_j(t)$ and the transportation cost in $z_j^T$ dollars per unit. 
 
 Each distribution warehouse $j$ has a maximum capacity of $c_j$, storage cost of $z_j^S$ and stock level at time $t$ equal to $q_j(t)$. Products are sold at a uniform price $p$ and the demand at time $t$ is $d_j(t)$, for the warehouse j. We also assume that the manufacturer is contractually obligated to fulfill all orders placed by retail partners, and if the demand for a certain time step exceeds the corresponding stock level, it results in a penalty of $z_j^P$ dollars per each unfulfilled unit. Unfulfilled demand is carried over between time steps (which corresponds to backordering), and we model it as a negative stock level.
+
+\pagebreak
 
 \subsection{Markov Decision Process}
 
@@ -93,7 +112,7 @@ The state update rule is specified as follows:
 
 \begin{equation}
     \begin{split}
-    S_{t+1} = \langle & \min \{ q_0(t) + a_0 - \sum_{j = 1}^W a_j, c_0 \} \\
+    S_{t+1} = \langle & \min \{ q_0(t) + a_0 - \sum_{j = 1}^W a_j, c_0 \}, \\
                       & \min \{ q_1(t) + a_1(t) - d_1(t), c_1 \}, \\
                       & ... \\
                       & \min \{ q_W(t) + a_W(t) - d_W(t), c_W \}, \\
@@ -102,6 +121,15 @@ The state update rule is specified as follows:
                       & d(t - \tau) \rangle
     \end{split} 
 \end{equation}
+
+
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{RL.png}
+    \caption{High level visualization of the algorithm}
+\end{figure}
 
 And finally, the action vector consists of production and shipping controls,
 \begin{equation}
@@ -133,6 +161,13 @@ We use the DDPG (Deep Deterministic Policy Gradient) algorithm in particular, th
 
 \[ \pi_{\theta}(S) = A \]
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{DDPG.png}
+    \caption{Network Architecture of the DDPG Algorithm with Actor and Critic Networks \\ \emph{Note:} TD Error = Temporal Difference Error}
+\end{figure}
+
+
 As mentioned before, we find are finding a policy that maximises the expected return, \(R\) resulting in the Objective Function and optimzation problem: 
 
 \begin{equation} 
@@ -141,6 +176,10 @@ As mentioned before, we find are finding a policy that maximises the expected re
 \begin{equation} 
     \max_{\theta}\mathcal{J}(\pi_{\theta})
 \end{equation}
+
+
+
+
 
 \pagebreak
 
