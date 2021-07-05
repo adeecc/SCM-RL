@@ -241,7 +241,12 @@ TSWLatexianTemp*
 # generated if using elsarticle.cls
 *.spl
 
+
+# Python
+__pycache__
+
 # Miscalleneous
 arxiv-style/
 Paper/
+PS/
 .vscode/
