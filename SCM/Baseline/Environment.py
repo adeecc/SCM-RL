@@ -3,34 +3,23 @@ import numpy as np
 import collections
 import matplotlib.pyplot as plt
 
+from utils import rescale
+
+
 DEMAND_DATA_PATH = "../../data/demand.csv"
 NUM_WAREHOUSES = 2
-EPISODE_DURATION = 26
+EPISODE_DURATION = 50
 MAX_DEMAND = 5
 UNIT_PRICE = 100
 UNIT_COST = 40
-
-
-def rescale(dd, min=0, max=5):
-    dd_min, dd_max = dd.min(axis=0), dd.max(axis=0)
-    return (dd - dd_min) / (dd_max - dd_min)
-
-
-def normalize(dd):
-    dd_mean, dd_std = dd.mean(axis=0), dd.std(axis=0)
-    return (dd - dd_mean) / dd_std
-
-
-demand_data = pd.read_csv(DEMAND_DATA_PATH)
-demand_data = demand_data.drop(columns=["Date"]).to_numpy()
-demand_data = rescale(demand_data)
 
 
 class State(object):
     def __init__(self, warehouse_num, T, demand_history, t=0):
         self.warehouse_num = warehouse_num
         self.factory_stock = 0
-        self.warehouse_stock = np.repeat(0, warehouse_num)
+        # np.repeat(0, warehouse_num)
+        self.warehouse_stock = np.zeros(warehouse_num)
         self.demand_history = demand_history
         self.T = T
         self.t = t
@@ -65,8 +54,13 @@ class SupplyChainEnvironment(object):
         self.unit_price = unit_price     # unit price in dollars
         self.unit_cost = unit_cost       # unit cost in dollars
 
-        self.demand_data = demand_data * self.d_max
-        self.start_demand = 420
+        demand_data = pd.read_csv(DEMAND_DATA_PATH)
+        demand_data = demand_data.drop(columns=["Date"]).to_numpy()
+        demand_data = rescale(demand_data, demand_range=(1, self.d_max))
+        self.demand_data = demand_data
+
+        self.demand_offset = np.random.randint(
+            low=0, high=demand_data.shape[0])  # 420
 
         # Storage Capacity of factory and each warehouse
         self.storage_capacities = np.fromfunction(
@@ -90,22 +84,21 @@ class SupplyChainEnvironment(object):
 
     # demand at time t at all warehouses
     def demand(self, t):
-        return self.demand_data[t % self.demand_data.shape[0]]
-
-        # try:
-        #     # return np.ceil(self.demand_data[t % self.demand_data.shape[0], j].to_numpy(dtype="float64"))
-        #     return self.demand_data[t % self.demand_data.shape[0], j]
-
-        # except:
-        #     print(f"SupplyChainEnvironment.demand called with {j = }, {t = }")
-        #     return np.zeros((self.warehouse_num,))
+        t = (t + self.demand_offset) % self.demand_data.shape[0]
+        return np.round(self.demand_data[t])
 
     def initial_state(self):
         return State(self.warehouse_num, self.T, list(self.demand_history))
 
-    def step(self, state: State, action: Action):
+    def step(self, state: State, action: Action, log=False):
         demands = self.demand(self.t)
-        # print(f"{demands = }")
+
+        if log:
+            df = pd.DataFrame([[self.t, demands[0], demands[1]]],
+                              columns=['t', 'demand_0', 'demand_1'])
+
+            df.to_csv(
+                "demands.csv", mode='a', header=False, index=False)
 
         # Calculate returns (reward)
         revenue = self.unit_price * np.sum(demands)
@@ -125,6 +118,7 @@ class SupplyChainEnvironment(object):
         # Calculate the next State
         next_state = State(self.warehouse_num, self.T,
                            list(self.demand_history), self.t)
+
         next_state.factory_stock = min(state.factory_stock + action.production_level - np.sum(
             action.shippings_to_warehouses), self.storage_capacities[0])
 

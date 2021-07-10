@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set()
+sns.set_theme(style="darkgrid", palette="deep")
 
 
 def rescale(dd, demand_range=(0, 1)):

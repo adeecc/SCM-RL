@@ -131,7 +131,7 @@ def main(total_trials=100, num_episodes=25, optimization_strategy="BayesianOptim
     plt.show()
 
     transitions_sQ = simulate_episode(sq_policy, log=True)
-    visualize_transitions(np.array(transitions_sQ))
+    visualize_transitions(np.array(transitions_sQ), T=50)
 
 
 if __name__ == '__main__':
