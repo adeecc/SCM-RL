@@ -3,7 +3,7 @@ import pandas as pd
 import ray
 
 from environment import SupplyChainEnvironment, Action
-from models import train_ddpg, train_td3, load_policy
+from train import train_ddpg, train_td3, load_policy
 from utils import visualize_transitions
 
 
@@ -17,7 +17,7 @@ def test(log_dir, checkpoint_id, log=True):
     expanded_data = []
 
     for t in range(env.T):
-        action = policy.compute_single_action(state.to_array(), state=[])
+        action = policy.compute_single_action(state.to_array())
 
         action_obj = Action(env.warehouse_num)
         action_obj.production_level = action[0][0]
