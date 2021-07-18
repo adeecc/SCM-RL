@@ -30,7 +30,7 @@ def train_td3(timesteps=5e5, net_architecture=None):
 
     if net_architecture:
         policy_kwargs = {
-            "activation_fn": th.nn.ReLU,
+            # "activation_fn": th.nn.ReLU,
             "net_arch": net_architecture
         }
     else:
