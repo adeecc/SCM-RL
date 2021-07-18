@@ -77,15 +77,17 @@ The code used in this report can be found on: \href{https://github.com/adeecc/SC
 \section{Components of the Reinforcement Learning Strategy}
 
 \subsection{The Agent and The Environment}
-The environment consists of a main Factory, a centrial factory warehouse, and $W$ distribution warehouses. The environment has the following properties:
+The environment consists of a main Factory, a central factory warehouse, and $W$ distribution warehouses. The environment has the following properties:
 
-A factory produces products with a constant cost of $z_0$ dollars per unit, and the production levela t time $t$ is $a_0(t).$ 
+A factory produces products with a constant cost of $z_0$ dollars per unit, and the production levela t time $t$ is $a_0(t).$
 
 Further, the facrtory warehouse has a maximum capacity of $c_0$ units. The storage cost for one product unit for one time step at the factory is $z_0^S$, and the stock level at time t is $s_0(t)$.
 
-At any time, $t$, the number of units shipped from the factory warehouse to the distribution warehouse $j$ is $a_j(t)$ and the transportation cost in $z_j^T$ dollars per unit. 
+At any time, $t$, the number of units shipped from the factory warehouse to the distribution warehouse $j$ is $a_j(t)$ and the transportation cost in $z_j^T$ dollars per unit.
 
 Each distribution warehouse $j$ has a maximum capacity of $c_j$, storage cost of $z_j^S$ and stock level at time $t$ equal to $q_j(t)$. Products are sold at a uniform price $p$ and the demand at time $t$ is $d_j(t)$, for the warehouse j. We also assume that the manufacturer is contractually obligated to fulfill all orders placed by retail partners, and if the demand for a certain time step exceeds the corresponding stock level, it results in a penalty of $z_j^P$ dollars per each unfulfilled unit. Unfulfilled demand is carried over between time steps (which corresponds to backordering), and we model it as a negative stock level.
+
+The Demand data being used is from a publicly available demand dataset \cite{zhao_product_2017}. The dataset was preprocessed and the product with maximum entries selected. 
 
 \pagebreak
 
@@ -93,7 +95,7 @@ Each distribution warehouse $j$ has a maximum capacity of $c_j$, storage cost of
 
 The problem at hand can be modeled as a Markov Decision Process (represented by a 4-tuple) with a deterministic policy.
 \begin{equation}
-    \langle S_t, A_t, R_{t+1}, S_{t+1} \rangle 
+    \langle S_t, A_t, R_{t+1}, S_{t+1} \rangle
 \end{equation}
 
 
@@ -108,18 +110,18 @@ where, the state at time $t$ is the tuple of all current stock levels, and deman
 
 Since we assume the current state to include just the previous demand values, it can potentially learn the demand function and embed the same into our model parameters.
 
-The state update rule is specified as follows: 
+The state update rule is specified as follows:
 
 \begin{equation}
     \begin{split}
-    S_{t+1} = \langle & \min \{ q_0(t) + a_0 - \sum_{j = 1}^W a_j, c_0 \}, \\
-                      & \min \{ q_1(t) + a_1(t) - d_1(t), c_1 \}, \\
-                      & ... \\
-                      & \min \{ q_W(t) + a_W(t) - d_W(t), c_W \}, \\
-                      & d(t), \\
-                      & ... \\
-                      & d(t - \tau) \rangle
-    \end{split} 
+        S_{t+1} = \langle & \min \{ q_0(t) + a_0 - \sum_{j = 1}^W a_j, c_0 \}, \\
+        & \min \{ q_1(t) + a_1(t) - d_1(t), c_1 \}, \\
+        & ... \\
+        & \min \{ q_W(t) + a_W(t) - d_W(t), c_W \}, \\
+        & d(t), \\
+        & ... \\
+        & d(t - \tau) \rangle
+    \end{split}
 \end{equation}
 
 
@@ -142,24 +144,13 @@ The dererministic Policy Function, \( \pi \) is determined by the Reinforcement 
     R = p\sum_{j = 1}^Wd_j - z_0a_0 - \sum_{j = 0}^W z_j^S \max \{q_j, 0 \} - \sum_{j = 1}^W z_j^Ta_j + \sum_{j = 1}^Wz_j^P \min \{q_j, 0 \}
 \end{equation}
 
-Lastly, we also define a simple demand function that approximates seasonality, is stationary and includes a stochastic Component
-
-\begin{equation}
-    \begin{split}
-        d_j(t) = \frac{d_{max}}{2} (1 + \sin(\frac{k (t + 2j)}{T})) + \eta_j(t), \quad
-        \eta_j(t) \sim \mathcal{U}(t; \eta_{\min}, \eta_{\max})
-    \end{split} 
-\end{equation}
-
-
 \subsection{Model Description}
 
 \paragraph{}
-For our Deep Reinforcement Learning Model we look at an Actor Critic Algorithm, that combines Policy Gradient Algorithm and vanilla Q-learning algorithms.  In such optimzation algorithms, the policy itself is approximated by a Deep Neural Network, with parameter \(\theta\). However, rather than using raw rewards and returns, the policy is computed based on the learned value function. We have a dedicated Function Approximator for the Policy (actor) and for estimating the Q Values collected over this policy (critic). 
 
-We use the DDPG (Deep Deterministic Policy Gradient) algorithm in particular, that leverages the Actor-Critic paradigm and techniques to stabilize Training. Further, it assumes a deterministic policy, rather than a stochastic one.
+We looked at several candidate examples, with multiple hyperparameters (TODO: Put Table) ranging from Deep Q Learning Models, Policy Gradient Algorithms, and Actor-Critic Algorithms. Deep Q Learning Algorithms use Deep Neural Newtorks to approximate the Q-Value function, which are the probabilities of taking a particular action. These models are designed for Discrete Action Spaces, and become extremely ineffective with a continuous action space as ours. Policy Gradient Algorithms use Deep Neural Networks to approximate the policy function directly and work well with continuous action spaces. However, these models are very naive and can't optimize for a complicated problem. 
 
-\[ \pi_{\theta}(S) = A \]
+Actor-Critic models such as Deep Deterministic Policy Gradient (DDPG) Algorithm \cite{lillicrap_continuous_2019} make use of 2 Separate Networks, the Actor and the Critic. The Actor is a Policy Gradient Model, and the Critic a Q Learning Model. Rather than using raw rewards and returns, the policy is computed based on the learned value function. In effect, the critic judges the performance of the actor and both are optimized based on the rewards. However, the DDPG algorithm suffers due to instability in the form of sensitivity to hyper-parameters and propensity to converge to very poor solutions or even diverge. 
 
 \begin{figure}[h]
     \centering
@@ -167,13 +158,20 @@ We use the DDPG (Deep Deterministic Policy Gradient) algorithm in particular, th
     \caption{Network Architecture of the DDPG Algorithm with Actor and Critic Networks \\ \emph{Note:} TD Error = Temporal Difference Error}
 \end{figure}
 
+A common failure mode for DDPG is that the learned Q-function begins to dramatically overestimate Q-values, which then leads to the policy breaking, because it exploits the errors in the Q-function.  Various algorithms have improved stability by addressing well identified issues. One of them is Twin Delayed Deep Deterministic policy gradient (TD3) \cite{fujimoto_addressing_2018}, which uses learns two Q-functions instead of one (hence “twin”), and uses the smaller of the two Q-values to form the targets in the Bellman error loss functions besides other optimizations.
 
-As mentioned before, we find are finding a policy that maximises the expected return, \(R\) resulting in the Objective Function and optimzation problem: 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{TD3.png}
+    \caption{Network Architecture of the TD3 Algorithm with Twin Actor and Critic Networks \\ \emph{Note:} TD Error = Temporal Difference Error}
+\end{figure}
 
-\begin{equation} 
+As mentioned before, we find are finding a policy that maximises the expected return, \(R\) resulting in the Objective Function and optimzation problem:
+
+\begin{equation}
     \mathcal{J}(\pi_{\theta}) = \mathbb{E}_{S, A, R \sim \pi_{\theta}} \left[ R \right] \end{equation}
 
-\begin{equation} 
+\begin{equation}
     \max_{\theta}\mathcal{J}(\pi_{\theta})
 \end{equation}
 
@@ -186,7 +184,7 @@ As mentioned before, we find are finding a policy that maximises the expected re
 \section{Training the Model}
 \subsection{Creating the OpenAI gym Wrapper}
 
-We create an openAI gym wrapper by inheriting from the \lstinline{ gym.Env} class and implementing the constructor (\lstinline{ __init__}) method, \lstinline{ reset} method and the \lstinline{ step} method. 
+We create an openAI gym wrapper by inheriting from the \lstinline{ gym.Env} class and implementing the constructor (\lstinline{ __init__}) method, \lstinline{ reset} method and the \lstinline{ step} method.
 
 \begin{lstlisting}[language=Python]
 class SimpleSupplyChain(gym.Env):
@@ -233,9 +231,9 @@ We ran the model with different parameters and hidden layers. A similar random s
 
 
 \subsection{Inference from the Model}
-The parameters of the model are saved in a json file after trinaing is completed and the same can be loaded. This model needs a state array that can be generated with the available data. This state array can be passed to the \lstinline{policy.compute_single_action} method that returns a vector of actions that need to be taken in the format specified in equation \eqref{eq:action_fmt}. 
+The parameters of the model are saved in a json file after trinaing is completed and the same can be loaded. This model needs a state array that can be generated with the available data. This state array can be passed to the \lstinline{policy.compute_single_action} method that returns a vector of actions that need to be taken in the format specified in equation \eqref{eq:action_fmt}.
 
-This same method can be used to generate a graph based visualization of the available stocks in the warehouse, and shipments and hence calculate the profits and cumulative profits. 
+This same method can be used to generate a graph based visualization of the available stocks in the warehouse, and shipments and hence calculate the profits and cumulative profits.
 
 \subsection{Challenges to overcome}
 \subsubsection{Starting the Tensorboard Dashboard}
@@ -244,14 +242,14 @@ The model tends to be large, and training it slow even on a dedicated GPU. Train
 
 Load the Tensorboard extension provided by Colab using \lstinline{%load_ext tensorboard}. This loads the \lstinline{tensorboard} magics that can be used to open a local tensorboard instance in the Google Colab window itself.
 
-Use \lstinline{tensorboard --logdir ~/ray_results} to point the directory to where RLlib maintains logs. Start training as you would normally, using the train method provided by RLlib itself. 
+Use \lstinline{tensorboard --logdir ~/ray_results} to point the directory to where RLlib maintains logs. Start training as you would normally, using the train method provided by RLlib itself.
 
 \subsection{Loading Checkpoints and Trained Models}
 RLlib stores the model config as a pickled file and as a json giving the flexibility to use either. However, when the file is stored as a json, the callback functions get stored as a string, rendering the model config unusable. A hack, around this is to set the callbacks manually to the default callbacks proivided by the RLlib library.
 
-The better alternative, is to load the config dictionary from the pickled file using \lstinline{ray.cloudpickle}. The pickled file has the callback functions stored as python methods and is hence easier to use. This is also used in their own linrary in \lstinline{rllib/rollout.py} in their codebase. 
+The better alternative, is to load the config dictionary from the pickled file using \lstinline{ray.cloudpickle}. The pickled file has the callback functions stored as python methods and is hence easier to use. This is also used in their own linrary in \lstinline{rllib/rollout.py} in their codebase.
 
-% \bibliographystyle{unsrtnat}
-% \bibliography{references}
+\bibliographystyle{ieeetr}
+\bibliography{references}
 
 \end{document}
