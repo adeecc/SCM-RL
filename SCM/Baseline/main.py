@@ -58,7 +58,7 @@ parameters = (
     },
 )
 
-
+# Reward: mean 6660.313520818671, standard deviation 489.4557712110093
 def bayesian_optimization(total_trials, parameters):
     best_parameters, best_values, experiment, model = optimize(
         parameters=parameters,
@@ -69,7 +69,7 @@ def bayesian_optimization(total_trials, parameters):
 
     return best_parameters, best_values
 
-
+# Reward: mean 5347.2, standard deviation 613.7202620086778
 def grid_search(p_grid1=[0, 5, 10],
                 p_grid2=[0, 5, 10]):
 
