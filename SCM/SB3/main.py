@@ -1,43 +1,32 @@
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_theme(style="darkgrid", palette="deep")
 
-from stable_baselines3 import TD3
-from stable_baselines3.common.noise import NormalActionNoise
-
-from environment import SimpleSupplyChain
-
-env = SimpleSupplyChain() 
-
-n_actions = env.action_space.shape[-1]
-action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+from agents import train_ddpg, train_td3, load_ddpg, load_td3, test_agent
 
 
-agent = TD3("MlpPolicy", env, action_noise=action_noise, gamma=0.95, verbose=1, tensorboard_log="./tensorboard/td3_test_1")
-agent.learn(total_timesteps=5e5, log_interval=10)
-agent.save("td3_test_1")
+def main(algorithm="TD3", train=False, timesteps=5e5, filename=None):
+    if train:
+        if algorithm == "TD3":
+            agent = train_td3(timesteps, net_architecture=[512, 512])
+        elif algorithm == "DDPG":
+            agent = train_ddpg(timesteps)
 
-# agent = TD3.load("td3_test_1")
+    else:
+        if algorithm == "TD3":
+            agent = load_td3(filename)
+        elif algorithm == "DDPG":
+            agent = load_ddpg(filename)
 
-obs = env.reset()
-total_reward = 0
-done = False
 
-transitions = []
 
-t = 0
-while not done:
-    action, _states = agent.predict(obs)
-    obs, rewards, done, info = env.step(action)
-    total_reward += rewards
+    mean_reward, total_rewards, num_episodes = test_agent(agent, log=True, num_episodes=100)
+    std_dev = np.std(total_rewards)
+    print(f"Average Reward over {num_episodes} episodes: {mean_reward} [std. dev: {std_dev}]")
 
-    print(f"{obs = }")
-    print(f"{action = }")
-    print(f"{rewards = }")
+    plt.plot(total_rewards)
+    plt.show()
 
-    transitions.append([t, obs[0], obs[1], obs[2], *action, rewards, total_reward])
-    t += 1
-
-df = pd.DataFrame(transitions, columns=['t', 'factory_stock', 'warehouse_stock_0', 'warehouse_stock_1', 'production_level', 'shipping_to_warehouse_0', 'shipping_to_warehouse_1', 'timestep_reward', 'total_reward'])
-df.to_csv("transitions.csv", index=False)
-
-print(f"Reward during inference: {total_reward}")
+if __name__ == '__main__':
+    main(train=True)
