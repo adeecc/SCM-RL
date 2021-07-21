@@ -121,7 +121,7 @@ def main(total_trials=100, num_episodes=25, optimization_strategy="BayesianOptim
         reorder_amount
     )
 
-    return_trace = simulate(sq_policy, num_episodes=num_episodes)
+    return_trace = simulate(sq_policy, num_episodes=num_episodes, log=True)
 
     plt.figure(figsize=(16, 4))
     plt.plot(range(len(return_trace)), return_trace)
@@ -130,9 +130,9 @@ def main(total_trials=100, num_episodes=25, optimization_strategy="BayesianOptim
 
     plt.show()
 
-    transitions_sQ = simulate_episode(sq_policy, log=True)
-    visualize_transitions(np.array(transitions_sQ), T=50)
+    # transitions_sQ = simulate_episode(sq_policy, log=True)
+    # visualize_transitions(np.array(transitions_sQ), T=50)
 
 
 if __name__ == '__main__':
-    main(total_trials=50, num_episodes=25, optimization_strategy="GridSearch")
+    main(total_trials=25, num_episodes=100, optimization_strategy="GridSearch")

@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
+from stable_baselines3.td3.policies import TD3Policy
 import torch as th
+import torch.nn as nn
 import time
 
 from stable_baselines3 import TD3, DDPG
 from stable_baselines3.td3 import MlpPolicy
-from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
 from torch.nn.modules import activation
 
 from environment import SimpleSupplyChain
@@ -19,7 +21,7 @@ def make_policy(net_architecture=[512, 512]):
 
     return policy
 
-# Average Reward over 100 episodes: 7041.430871062279 [std. dev: 465.25285975768423]
+# Reward Mean: 7041.430871062279 [std. dev: 465.25285975768423] (episodes: 1000)
 def train_td3(timesteps=5e5, net_architecture=None):
     print("Created Environment...")
     env = SimpleSupplyChain()
@@ -50,12 +52,28 @@ def train_td3(timesteps=5e5, net_architecture=None):
     return agent
 
 
+def train_td3(timesteps=5e5):
+    env = SimpleSupplyChain()
+
+    n_actions = env.action_space.shape[-1]
+    action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+
+    agent = TD3(policy="MlpPolicy", env=env,
+                action_noise=action_noise, verbose=1, tensorboard_log="./tensorboard/TD3")
+
+    agent.learn(total_timesteps=timesteps, log_interval=10)
+    agent.save()
+
+    return agent
+
+# Reward Mean: 6705.04089457035 [std. dev: 366.5834462025138] (episodes: 1000)
 def train_ddpg(timesteps=5e5):
     print("Created Environment...")
     env = SimpleSupplyChain()
 
     n_actions = env.action_space.shape[-1]
-    action_noise = NormalActionNoise(mean=np.zeros(
+
+    action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(
         n_actions), sigma=0.1 * np.ones(n_actions))
 
     agent = DDPG("MlpPolicy", env, action_noise=action_noise,

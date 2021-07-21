@@ -30,36 +30,52 @@ class SQPolicy(object):
         return action
 
 
-def simulate_episode(policy: SQPolicy, log=False) -> list:
+def simulate_episode(policy: SQPolicy, log=False, episode=1, log_file=None) -> list:
     env = SupplyChainEnvironment()
     state = env.initial_state()
     transitions = []
     expanded_data = []
+    total_reward = 0
     done = False
+
     for t in range(env.T):
-        # while not done:
         action = policy.select_action(state)
         state, reward, done = env.step(state, action, log)
+        total_reward += reward
+
         transitions.append([state, action, reward])
-        expanded_data.append([state.t, state.warehouse_num,
-                             state.factory_stock,
+        expanded_data.append([episode, t, state.factory_stock,
                              state.warehouse_stock[0], state.warehouse_stock[1],
                              action.production_level,
                              action.shippings_to_warehouses[0], action.shippings_to_warehouses[1],
-                             reward])
+                             reward, total_reward])
 
     if log:
-        df = pd.DataFrame(expanded_data, columns=['t', 'warehouse_num', 'factory_stock',
-                      'warehouse_stock_0', 'warehouse_stock_1', 'production_level', 'shippings_to_warehouses_0', 'shippings_to_warehouses_1', 'reward'])
+        df = pd.DataFrame(expanded_data, columns=['episode', 't', 'factory_stock',
+                      'warehouse_stock_0', 'warehouse_stock_1', 'production_level', 'shippings_to_warehouses_0', 'shippings_to_warehouses_1', 'timestep_reward', 'total_reward'])
 
-        df.to_csv("transitions.csv", index=False)
+        if log_file is None:
+            log_file = 'transitions.csv'
+        df.to_csv(log_file, index=False)
 
-    return transitions
+    return transitions, expanded_data
 
 
-def simulate(policy: SQPolicy, num_episodes: int, log=False) -> list:
+def simulate(policy: SQPolicy, num_episodes: int, log=False, log_file=None) -> list:
     returns_trace = []
+    expanded_data = []
     for episode in range(num_episodes):
-        returns_trace.append(sum(np.array(simulate_episode(policy, log)).T[2]))
+        return_trace, exp_data = simulate_episode(policy, log=False, episode=episode, log_file=log_file)
+
+        returns_trace.append(sum(np.array(return_trace).T[2]))
+        expanded_data += (exp_data)
+
+    if log:
+        df = pd.DataFrame(expanded_data, columns=['episode', 't', 'factory_stock',
+                      'warehouse_stock_0', 'warehouse_stock_1', 'production_level', 'shippings_to_warehouse_0', 'shippings_to_warehouse_1', 'timestep_reward', 'total_reward'])
+
+        if log_file is None:
+            log_file = 'transitions.csv'
+        df.to_csv(log_file, index=False)
 
     return returns_trace
