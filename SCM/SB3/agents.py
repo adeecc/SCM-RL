@@ -22,6 +22,8 @@ def make_policy(net_architecture=[512, 512]):
     return policy
 
 # Reward Mean: 7041.430871062279 [std. dev: 465.25285975768423] (episodes: 1000)
+
+
 def train_td3(timesteps=5e5, net_architecture=None):
     print("Created Environment...")
     env = SimpleSupplyChain()
@@ -51,20 +53,6 @@ def train_td3(timesteps=5e5, net_architecture=None):
     print(f"Training Finished. Model saved as >>> {file_name}")
     return agent
 
-
-def train_td3(timesteps=5e5):
-    env = SimpleSupplyChain()
-
-    n_actions = env.action_space.shape[-1]
-    action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-
-    agent = TD3(policy="MlpPolicy", env=env,
-                action_noise=action_noise, verbose=1, tensorboard_log="./tensorboard/TD3")
-
-    agent.learn(total_timesteps=timesteps, log_interval=10)
-    agent.save()
-
-    return agent
 
 # Reward Mean: 6705.04089457035 [std. dev: 366.5834462025138] (episodes: 1000)
 def train_ddpg(timesteps=5e5):
@@ -133,3 +121,4 @@ def test_agent(agent, log=False, num_episodes=10):
 
     mean_reward = np.mean(total_rewards)
     return mean_reward, total_rewards, num_episodes
+
